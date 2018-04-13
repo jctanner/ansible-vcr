@@ -1,0 +1,37 @@
+- name: test play
+  #hosts: all
+  hosts: el6host
+  user: vagrant
+  connection: ssh
+  gather_facts: True
+  max_fail_percentage: .1
+  #serial: 1
+  tasks:
+
+    - name: check my identity
+      shell: uname -a
+
+    - name: remove foobar
+      shell: rm -rf /tmp/foobar
+      delegate_to: localhost
+
+    - name: create foobar
+      shell: echo "foobar" > /tmp/foobar
+
+    - name: fetch /tmp/foobar
+      fetch:
+        src: /tmp/foobar
+        dest: /tmp/foobar
+
+    - name: remove sysstat
+      yum:
+        name: sysstat
+        state: absent
+      become: True
+
+    - name: install sysstat
+      yum:
+        name: sysstat
+        state: latest
+      become: True
+
