@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# EXPANDER
+#
+#   Take the fixtures created by an ansible-vcr recording and expand them
+#   to a new arbitary hostcount.
+
 import argparse
 import glob
 import os
