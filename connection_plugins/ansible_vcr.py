@@ -23,11 +23,6 @@ except ImportError:
     display = Display()
 
 
-FIXTURE_EXEC_INDEX = 0
-FIXTURE_PUT_INDEX = 0
-FIXTURE_FETCH_INDEX = 0
-
-
 def clean_context(context):
     '''Remove sets in playcontext so it can be jsonified'''
     for k,v in context.items():
@@ -101,6 +96,10 @@ class AnsibleVCR(object):
         self.current_task_number = None
         self.current_task_info = None
 
+        self.exec_index = 0
+        self.put_index = 0
+        self.fetch_index = 0
+
     def _serialize_all_info(self, connection, returncode, stdout, stderr, command=None, in_path=None, out_path=None):
         # build the datastructure with everything we know ...
 
@@ -145,8 +144,12 @@ class AnsibleVCR(object):
 
         # set the top level directory for the task fixtures
         taskdir = os.path.join(self.fixture_dir, str(self.current_task_number))
-        if not os.path.isdir(taskdir):
-            os.makedirs(taskdir)
+        try:
+            if not os.path.isdir(taskdir):
+                os.makedirs(taskdir)
+        except OSError as e:
+            # fork race conditions
+            pass
 
         # https://github.com/ansible/ansible/blob/devel/lib/ansible/executor/task_executor.py#L797
         # connection = self._shared_loader_obj.connection_loader.get(conn_type, self._play_context, self._new_stdin, ansible_playbook_pid=to_text(os.getppid()))
@@ -277,7 +280,7 @@ class AnsibleVCR(object):
 
 
     def read_exec_command(self, connection, cmd):
-        display.v('FIXTURE_EXEC_INDEX: %s' % FIXTURE_EXEC_INDEX)
+        display.v('FIXTURE_EXEC_INDEX: %s' % self.exec_index)
         fixture_file = self.get_fixture_file('exec', 'read', connection=connection, cmd=cmd)
 
         with open(fixture_file, 'r') as f:
@@ -333,8 +336,7 @@ class AnsibleVCR(object):
 
 
     def record_put_file(self, connection, in_path, out_path, returncode, stdout, stderr):
-        global FIXTURE_PUT_INDEX
-        FIXTURE_PUT_INDEX += 1
+        self.put_index += 1
 
         fixture_file = self.get_fixture_file('put', 'record', connection=connection)
         jdata = self._serialize_all_info(
@@ -368,18 +370,10 @@ class AnsibleVCR(object):
 
 
     def read_put_file(self, connection, in_path, out_path):
-        global FIXTURE_PUT_INDEX
-        FIXTURE_PUT_INDEX += 1
-        display.v('FIXTURE_PUT_INDEX: %s' % FIXTURE_PUT_INDEX)
-
-        #frame = inspect.currentframe()
-        #args, _, _, values = inspect.getargvalues(frame)
-        #fixture_file = self.get_fixture_file('put', 'read', values)
+        self.put_index += 1
+        display.v('FIXTURE_PUT_INDEX: %s' % self.put_index)
         fixture_file = self.get_fixture_file('put', 'read', connection=connection)
 
-        #fixture_dir = '/tmp/fixtures'
-
-        #fixture_file = os.path.join(fixture_dir, '%s_put_fixture.json' % FIXTURE_PUT_INDEX)
         with open(fixture_file, 'r') as f:
             jdata = json.loads(f.read())
 
@@ -387,12 +381,7 @@ class AnsibleVCR(object):
 
 
     def record_fetch_file(self, connection, in_path, out_path, returncode, stdout, stderr):
-        global FIXTURE_FETCH_INDEX
-        FIXTURE_FETCH_INDEX += 1
-
-        #frame = inspect.currentframe()
-        #args, _, _, values = inspect.getargvalues(frame)
-        #fixture_file = self.get_fixture_file('fetch', 'record', values)
+        self.fetch_index += 1
         fixture_file = self.get_fixture_file('fetch', 'record', connection=connection)
 
         jdata = self._serialize_all_info(
@@ -423,34 +412,17 @@ class AnsibleVCR(object):
 
 
     def read_fetch_file(self, connection, in_path, out_path):
-        global FIXTURE_FETCH_INDEX
-        FIXTURE_FETCH_INDEX += 1
-        display.v('FIXTURE_FETCH_INDEX: %s' % FIXTURE_FETCH_INDEX)
-
-        #frame = inspect.currentframe()
-        #args, _, _, values = inspect.getargvalues(frame)
-        #fixture_file = self.get_fixture_file('fetch', 'read', values)
+        self.fetch_index += 1
         fixture_file = self.get_fixture_file('fetch', 'read', connection=connection)
 
-        #fixture_dir = '/tmp/fixtures'
-        #if not os.path.isdir(fixture_dir):
-        #    os.makedirs(fixture_dir)
-
-        #fixture_file = os.path.join(fixture_dir, '%s_fetch_fixture.json' % FIXTURE_FETCH_INDEX)
         with open(fixture_file, 'r') as f:
             jdata = json.loads(f.read())
 
         # /tmp/fixtures/4/el7host/1_fetch_content_foobar
         # 2018-04-13_08-33-17-377361_fetch_content_1_foobar
 
-        suffix = 'fetch_content_%s_%s' % (FIXTURE_FETCH_INDEX, os.path.basename(out_path))
+        suffix = 'fetch_content_%s_%s' % (self.fetch_index, os.path.basename(out_path))
         candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), suffix))
-        #import epdb; epdb.st()
-
-        #content_file = os.path.join(
-        #    os.path.dirname(fixture_file),
-        #    'fetch_content_%s_%s' % (FIXTURE_FETCH_INDEX, os.path.basename(out_path))
-        #)
         content_file = candidates[-1]
 
         if not os.path.isdir(content_file):
