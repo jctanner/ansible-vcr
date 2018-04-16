@@ -7,7 +7,6 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-
 DOCUMENTATION = '''
     connection: ssh
     short_description: connect via ssh client binary
@@ -22,6 +21,11 @@ DOCUMENTATION = '''
           vars:
                - name: ansible_host
                - name: ansible_ssh_host
+      _original_host:
+          description: Hostname/ip to connect to.
+          default: inventory_hostname
+          vars:
+               - name: inventory_hostname
       host_key_checking:
           description: Determines if ssh should check host keys
           type: boolean
