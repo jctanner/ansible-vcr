@@ -101,6 +101,38 @@ class AnsibleVCR(object):
         self.current_task_number = None
         self.current_task_info = None
 
+    def _serialize_all_info(self, connection, returncode, stdout, stderr, command=None, in_path=None, out_path=None):
+        # build the datastructure with everything we know ...
+
+        jdata = {
+            'task_info': self.current_task_info.copy(),
+            'context': clean_context(connection._play_context.serialize()),
+            'transport': connection.transport,
+            'command': command,
+            'in_path': in_path,
+            'out_path': out_path,
+            'returncode': returncode,
+            'stdout': stdout,
+            'stderr': stderr
+        }
+
+        for attrib in ['host', 'user', 'port', 'control_path', 'socket_path']:
+            if hasattr(connection, attrib):
+                jdata[attrib] = getattr(connection, attrib)
+            else:
+                if attrib == 'host':
+                    jdata[attrib] = 'localhost'
+                else:
+                    jdata[attrib] = None
+
+        try:
+            json.dumps(jdata)
+        except Exception as e:
+            print(e)
+            import epdb; epdb.st()
+
+        return jdata
+
     def get_fixture_file(self, function, op, argvals=None, connection=None, cmd=None):
         '''Use the data to generate a fixture filename for the caller'''
 
@@ -116,8 +148,22 @@ class AnsibleVCR(object):
         if not os.path.isdir(taskdir):
             os.makedirs(taskdir)
 
+        # https://github.com/ansible/ansible/blob/devel/lib/ansible/executor/task_executor.py#L797
+        # connection = self._shared_loader_obj.connection_loader.get(conn_type, self._play_context, self._new_stdin, ansible_playbook_pid=to_text(os.getppid()))
+
         # use connection to determine the remote host
-        hostdir = os.path.join(taskdir, connection.host)
+        '''
+        if hasattr(connection, 'host'):
+            hostdir = os.path.join(taskdir, connection.host)
+        else:
+            hn = connection.get_option('_original_host')
+            hostdir = os.path.join(taskdir, 'localhost[%s]' % hn)
+        '''
+        # depends on https://github.com/ansible/ansible/pull/38818
+        hn = connection.get_option('_original_host')
+        if not hn:
+            hostdir = os.path.join(taskdir, connection.host)
+        hostdir = os.path.join(taskdir, hn)
 
         # ensure we have a place to read and write the fixtures for the host
         if not os.path.isdir(hostdir):
@@ -217,57 +263,23 @@ class AnsibleVCR(object):
 
     def record_exec_command(self, connection, command, returncode, stdout, stderr):
 
-        #frame = inspect.currentframe()
-        #args, _, _, values = inspect.getargvalues(frame)
         fixture_file = self.get_fixture_file(
             'exec',
             'record',
             connection=connection
         )
-        #import epdb; epdb.st()
 
         # build the datastructure with everything we know ...
-        jdata = {
-            'task_info': self.current_task_info.copy(),
-            'context': clean_context(connection._play_context.serialize()),
-            'transport': connection.transport,
-            'host': connection.host,
-            'user': connection.user,
-            'port': connection.port,
-            'control_path': connection.control_path,
-            'socket_path': connection.socket_path,
-            'ssh_executable': connection._play_context.ssh_executable,
-            'command': command,
-            'returncode': returncode,
-            'stdout': stdout,
-            'stderr': stderr
-        }
-
-        #jdata['context'].pop('only_tags', None)
-        #jdata['context'].pop('skip_tags', None)
-
-        try:
-            json.dumps(jdata)
-        except Exception as e:
-            print(e)
-            import epdb; epdb.st()
+        jdata = self._serialize_all_info(connection, returncode, stdout, stderr, command=command)
 
         with open(fixture_file, 'w') as f:
             f.write(json.dumps(jdata, indent=2))
 
 
     def read_exec_command(self, connection, cmd):
-        #global FIXTURE_EXEC_INDEX
-        #FIXTURE_EXEC_INDEX += 1
         display.v('FIXTURE_EXEC_INDEX: %s' % FIXTURE_EXEC_INDEX)
-
-        #frame = inspect.currentframe()
-        #args, _, _, values = inspect.getargvalues(frame)
-        #fixture_file = self.get_fixture_file('exec', 'read', values, cmd=cmd)
         fixture_file = self.get_fixture_file('exec', 'read', connection=connection, cmd=cmd)
 
-        #fixture_dir = '/tmp/fixtures'
-        #fixture_file = os.path.join(fixture_dir, '%s_exec_fixture.json' % FIXTURE_EXEC_INDEX)
         with open(fixture_file, 'r') as f:
             jdata = json.loads(f.read())
 
@@ -316,8 +328,6 @@ class AnsibleVCR(object):
                 jdata['command'][-1] = fixed_cmd[:]
 
         display.v('OUT CMD(2): %s' % jdata['command'][-1])
-        #if cmd[-1] != jdata['command'][-1]:
-        #    import epdb; epdb.st()
 
         return (jdata['returncode'], jdata['stdout'], jdata['stderr'])
 
@@ -326,33 +336,15 @@ class AnsibleVCR(object):
         global FIXTURE_PUT_INDEX
         FIXTURE_PUT_INDEX += 1
 
-        #frame = inspect.currentframe()
-        #args, _, _, values = inspect.getargvalues(frame)
-        #fixture_dir = get_fixture_dir('put', values)
-
-        #fixture_dir = '/tmp/fixtures'
-        #if not os.path.isdir(fixture_dir):
-        #    os.makedirs(fixture_dir)
-
-        #fixture_file = os.path.join(fixture_dir, '%s_put_fixture.json' % FIXTURE_PUT_INDEX)
-        #fixture_file = self.get_fixture_file('put', 'record', values)
         fixture_file = self.get_fixture_file('put', 'record', connection=connection)
-
-        jdata = {
-            'context': clean_context(connection._play_context.serialize()),
-            'transport': connection.transport,
-            'host': connection.host,
-            'user': connection.user,
-            'port': connection.port,
-            'control_path': connection.control_path,
-            'socket_path': connection.socket_path,
-            'ssh_executable': connection._play_context.ssh_executable,
-            'in_path': in_path,
-            'out_path': out_path,
-            'returncode': returncode,
-            'stdout': stdout,
-            'stderr': stderr
-        }
+        jdata = self._serialize_all_info(
+            connection,
+            returncode,
+            stdout,
+            stderr,
+            in_path=in_path,
+            out_path=out_path
+        )
 
         with open(fixture_file, 'w') as f:
             f.write(json.dumps(jdata, indent=2))
@@ -403,21 +395,14 @@ class AnsibleVCR(object):
         #fixture_file = self.get_fixture_file('fetch', 'record', values)
         fixture_file = self.get_fixture_file('fetch', 'record', connection=connection)
 
-        jdata = {
-            'context': clean_context(connection._play_context.serialize()),
-            'transport': connection.transport,
-            'host': connection.host,
-            'user': connection.user,
-            'port': connection.port,
-            'control_path': connection.control_path,
-            'socket_path': connection.socket_path,
-            'ssh_executable': connection._play_context.ssh_executable,
-            'in_path': in_path,
-            'out_path': out_path,
-            'returncode': returncode,
-            'stdout': stdout,
-            'stderr': stderr
-        }
+        jdata = self._serialize_all_info(
+            connection,
+            returncode,
+            stdout,
+            stderr,
+            in_path=in_path,
+            out_path=out_path
+        )
 
         with open(fixture_file, 'w') as f:
             f.write(json.dumps(jdata, indent=2))

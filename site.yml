@@ -1,6 +1,6 @@
 - name: test play
-  #hosts: all
-  hosts: el6host
+  hosts: all
+  #hosts: el6host
   user: vagrant
   connection: ssh
   gather_facts: True
@@ -8,20 +8,36 @@
   #serial: 1
   tasks:
 
+    - name: show the hostname [local]
+      shell: echo "{{ inventory_hostname }}"
+      delegate_to: localhost
+
     - name: check my identity
       shell: uname -a
 
     - name: remove foobar
-      shell: rm -rf /tmp/foobar
+      shell: rm -rf /tmp/foobar*
       delegate_to: localhost
 
     - name: create foobar
-      shell: echo "foobar" > /tmp/foobar
+      shell: echo "foobar" > /tmp/foobar 
+
+    - name: create a local foobar
+      copy:
+          content: "foobar"
+          dest: /tmp/foobar.txt
+      delegate_to: localhost
 
     - name: fetch /tmp/foobar
       fetch:
         src: /tmp/foobar
         dest: /tmp/foobar
+
+    - name: fetch /tmp/foobar [local]
+      fetch:
+        src: /tmp/foobar.txt
+        dest: /tmp/foobar2
+      delegate_to: localhost
 
     - name: remove sysstat
       yum:
