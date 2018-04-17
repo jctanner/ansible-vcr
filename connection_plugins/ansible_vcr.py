@@ -269,7 +269,9 @@ class AnsibleVCR(object):
                 filen = _existing[-1]
             else:
                 display.error('_existing: %s' % _existing)
-                import epdb; epdb.st()
+                breakhost = os.environ.get('ANSIBLE_VCR_HOST_BREAK')
+                if not breakhost or breakhost == hn:
+                    import epdb; epdb.st()
                 filen = None
 
             self.fixture_logger.set_last_file(self.current_task_number, hostdir, function, filen)
