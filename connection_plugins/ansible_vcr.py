@@ -256,6 +256,7 @@ class AnsibleVCR(object):
             if len(_existing) == 1:
                 filen = _existing[-1]
             else:
+                display.error('_existing: %s' % _existing)
                 import epdb; epdb.st()
                 filen = None
 
