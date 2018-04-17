@@ -100,6 +100,7 @@ class VCRCallbackReader(object):
 class AnsibleVCR(object):
 
     def __init__(self):
+        self.mode = os.environ.get('ANSIBLE_VCR_MODE', None)
         self.fixture_dir = \
             os.environ.get('ANSIBLE_VCR_FIXTURE_DIR', '/tmp/fixtures')
         self.fixture_logger = FixtureLogger(self.fixture_dir)
