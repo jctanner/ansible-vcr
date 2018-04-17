@@ -986,7 +986,7 @@ class Connection(ConnectionBase):
         super(Connection, self).exec_command(cmd, in_data=in_data, sudoable=sudoable)
 
         display.vvv('#########################################################################')
-        mode = os.environ.get('ANSIBLE_RECORDER_MODE', '').lower()
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '').lower()
 
         display.vvv(u"ESTABLISH SSH CONNECTION FOR USER: {0}".format(self._play_context.remote_user), host=self._play_context.remote_addr)
         display.vvv('#########################################################################')
@@ -1028,7 +1028,7 @@ class Connection(ConnectionBase):
         ''' transfer a file from local to remote '''
 
         super(Connection, self).put_file(in_path, out_path)
-        mode = os.environ.get('ANSIBLE_RECORDER_MODE', '').lower()
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '').lower()
 
         display.vvv('#########################################################################')
         display.vvv(u"PUT {0} TO {1}".format(in_path, out_path), host=self.host)
@@ -1054,7 +1054,7 @@ class Connection(ConnectionBase):
         ''' fetch a file from remote to local '''
 
         super(Connection, self).fetch_file(in_path, out_path)
-        mode = os.environ.get('ANSIBLE_RECORDER_MODE', '').lower()
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '').lower()
 
         display.vvv('#########################################################################')
         display.vvv(u"FETCH {0} TO {1}".format(in_path, out_path), host=self.host)

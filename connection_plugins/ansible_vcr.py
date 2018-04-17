@@ -36,6 +36,9 @@ class FixtureLogger(object):
     '''CSV like file reader+writer for fixture logging'''
 
     def __init__(self, logdir='/tmp/fixtures'):
+        if not logdir:
+            logdir = \
+                os.environ.get('ANSIBLE_VCR_FIXTURE_DIR', '/tmp/fixtures')
         self.logfile = os.path.join(logdir, 'fixture_read.log')
 
     def get_last_file(self, taskid, hostdir, function):
@@ -69,16 +72,23 @@ class FixtureLogger(object):
                 hd = row[1]
         return hd
 
+
 class VCRCallbackReader(object):
 
     '''A callback client of sorts'''
 
-    logfile = '/tmp/fixtures/callback.log'
     logdata = {}
+
+    def get_logfile(self):
+        fixturedir = os.environ.get('ANSIBLE_VCR_FIXTURE_DIR', '/tmp/fixtures')
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '')
+        logfile = os.path.join(fixturedir, 'callback_%s.log' % mode)
+        return logfile
 
     def _read_log(self):
         '''Consume the current log created by the callback'''
-        with open(self.logfile, 'r') as f:
+        logfile = self.get_logfile()
+        with open(logfile, 'r') as f:
             self.logdata = json.loads(f.read())
 
     def get_current_task(self):
@@ -90,7 +100,8 @@ class VCRCallbackReader(object):
 class AnsibleVCR(object):
 
     def __init__(self):
-        self.fixture_dir = '/tmp/fixtures'
+        self.fixture_dir = \
+            os.environ.get('ANSIBLE_VCR_FIXTURE_DIR', '/tmp/fixtures')
         self.fixture_logger = FixtureLogger(self.fixture_dir)
         self.callback_reader = VCRCallbackReader()
         self.current_task_number = None

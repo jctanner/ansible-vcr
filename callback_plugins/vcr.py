@@ -24,11 +24,20 @@ class CallbackModule(CallbackBase):
     CALLBACK_TYPE = 'notification'
     CALLBACK_NAME = 'vcr'
 
+    def get_logfile(self):
+        fixturedir = os.environ.get('ANSIBLE_VCR_FIXTURE_DIR', '/tmp/fixtures')
+        if not os.path.isdir(fixturedir):
+            os.makedirs(fixturedir)
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '')
+        logfile = os.path.join(fixturedir, 'callback_%s.log' % mode)
+        return logfile
+
     def write_data(self):
-        logdir = '/tmp/fixtures'
-        logfile = os.path.join(logdir, 'callback.log')
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
+        #logdir = '/tmp/fixtures'
+        #logfile = os.path.join(logdir, 'callback.log')
+        logfile = self.get_logfile()
+        #if not os.path.isdir(logdir):
+        #    os.makedirs(logdir)
         with open(logfile, 'w') as f:
             f.write(json.dumps(PDATA))
 

@@ -89,7 +89,7 @@ class Connection(ConnectionBase):
         super(Connection, self).exec_command(cmd, in_data=in_data, sudoable=sudoable)
 
         display.debug("in local.exec_command()")
-        mode = os.environ.get('ANSIBLE_RECORDER_MODE', '').lower()
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '').lower()
 
         executable = C.DEFAULT_EXECUTABLE.split()[0] if C.DEFAULT_EXECUTABLE else None
 
@@ -162,7 +162,7 @@ class Connection(ConnectionBase):
         ''' transfer a file from local to local '''
 
         super(Connection, self).put_file(in_path, out_path)
-        mode = os.environ.get('ANSIBLE_RECORDER_MODE', '').lower()
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '').lower()
 
         display.vvv(u"PUT {0} TO {1}".format(in_path, out_path), host=self._play_context.remote_addr)
 
@@ -190,7 +190,7 @@ class Connection(ConnectionBase):
         ''' fetch a file from local to local -- for copatibility '''
 
         super(Connection, self).fetch_file(in_path, out_path)
-        mode = os.environ.get('ANSIBLE_RECORDER_MODE', '').lower()
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '').lower()
 
         display.vvv(u"FETCH {0} TO {1}".format(in_path, out_path), host=self._play_context.remote_addr)
         if not mode or mode == 'record':
