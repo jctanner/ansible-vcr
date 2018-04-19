@@ -101,6 +101,11 @@ class Connection(ConnectionBase):
         else:
             cmd = map(to_bytes, cmd)
 
+        # inject strace
+        sinfo = None
+        if mode == 'record':
+            (cmd, sinfo) = avcr.get_strace_exec(self, cmd)
+
         if not mode or mode == 'record':
             p = subprocess.Popen(
                 cmd,
@@ -150,7 +155,8 @@ class Connection(ConnectionBase):
             display.debug("done communicating")
 
             display.debug("done with local.exec_command()")
-            avcr.record_exec_command(self, cmd, p.returncode, stdout, stderr)
+            avcr.record_exec_command(self, cmd, p.returncode, stdout, stderr, strace_info=sinfo)
+
             return (p.returncode, stdout, stderr)
 
         elif mode == 'play':

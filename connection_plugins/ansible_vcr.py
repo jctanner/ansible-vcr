@@ -30,6 +30,108 @@ def clean_context(context):
             context[k] = [x for x in v]
     return context
 
+class StraceProcessor(object):
+    def __init__(self, directory):
+        self.directory = directory
+        self.created = set()
+        self.unlinked = set()
+        self._process()
+
+    def get_created(self):
+        return list(self.created)
+
+    def get_removed(self):
+        return list(self.unlinked)
+
+    def _process(self):
+
+        syscalls = set()
+        blacklist = [
+            'execve',
+            'stat',
+            'access',
+            'fchmodat',
+            'readlink',
+            'getcwd',
+            'lstat',
+            'unlink',
+            'rmdir',
+            'utimensat'
+        ]
+
+        dirfiles = glob.glob('%s/*' % self.directory)
+        lines = []
+        for dirfile in dirfiles:
+            with open(dirfile, 'r') as f:
+                lines += f.readlines()
+
+        # open("/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC) = 5\n
+        #cwd = None
+        #current_file = None
+        #current_fn = None
+        for idx,x in enumerate(lines):
+            x = x.strip()
+
+            time_tuple = x.split(None, 1)
+            if time_tuple[-1].startswith('+++ exited'):
+                continue
+            if ' ENOENT ' in time_tuple[-1]:
+                continue
+            if ' EEXIST ' in time_tuple[-1]:
+                continue
+            if ' SIGCHLD ' in time_tuple[-1]:
+                continue
+
+            syscall = time_tuple[-1].split('(', 1)[0]
+            if syscall in blacklist:
+                continue
+
+            print(syscall)
+            print(time_tuple[-1])
+            syscalls.add(syscall)
+            try:
+                xpath = time_tuple[-1].split('"', 2)[1]
+            except Exception as e:
+                print(e)
+                import epdb; epdb.st()
+
+            '''
+            if syscall == 'chdir':
+                if xpath.startswith('/'):
+                    cwd = xpath[:]
+                elif cwd:
+                    cwd = os.path.join(cwd, xpath)
+                else:
+                    cwd = xpath[:]
+                continue
+
+            current_file = xpath[:]
+
+            try:
+                current_fn = int(time_tuple[1].split()[-1])
+            except Exception as e:
+                print(e)
+                continue
+                #import epdb; epdb.st()
+
+            if syscall == 'mkdir':
+                dirs.add(os.path.join(cwd, xpath))
+                continue
+
+            if syscall == 'open':
+                continue
+
+            #if 'write' in syscall:
+            #    import epdb; epdb.st()
+            '''
+
+            if syscall == 'creat':
+                self.created.add(xpath)
+            elif syscall == 'unlink':
+                self.unlinked.add(xpath)
+
+        #if len(list(syscalls)) > 1:
+        #    import epdb; epdb.st()
 
 class FixtureLogger(object):
 
@@ -143,6 +245,27 @@ class AnsibleVCR(object):
             import epdb; epdb.st()
 
         return jdata
+
+    def get_strace_exec(self, connection, cmd):
+
+        task_info = self.callback_reader.get_current_task()
+        strace_dir = os.path.join(
+            self.fixture_dir,
+            str(task_info['number']),
+            connection.get_option('_original_host'),
+            'strace.out'
+        )
+
+        if not os.path.isdir(strace_dir):
+            os.makedirs(strace_dir)
+
+        einfo = {
+            'dir': strace_dir,
+            'cmd_orig': cmd[:],
+            'cmd': 'strace -fftttv -e trace=creat,unlink -o ' + strace_dir + '/test ' + cmd
+        }
+
+        return (einfo['cmd'], einfo)
 
     def get_fixture_file(self, function, op, argvals=None, connection=None, cmd=None):
         '''Use the data to generate a fixture filename for the caller'''
@@ -279,7 +402,7 @@ class AnsibleVCR(object):
         display.vvvv('RETURN FILE: ' + str(filen))
         return filen
 
-    def record_exec_command(self, connection, command, returncode, stdout, stderr):
+    def record_exec_command(self, connection, command, returncode, stdout, stderr, strace_info=None):
 
         fixture_file = self.get_fixture_file(
             'exec',
@@ -289,6 +412,37 @@ class AnsibleVCR(object):
 
         # build the datastructure with everything we know ...
         jdata = self._serialize_all_info(connection, returncode, stdout, stderr, command=command)
+        if strace_info:
+            jdata['command'] = strace_info['cmd']
+            jdata['strace_info'] = strace_info.copy()
+            if os.path.isdir(strace_info['dir']):
+                sp = StraceProcessor(strace_info['dir'])
+                created = sp.get_created()
+                removed = sp.get_removed()
+
+                fdir = fixture_file.replace('.json', '.strace')
+                shutil.copytree(strace_info['dir'], fdir)
+                shutil.rmtree(strace_info['dir'])
+
+                if created or removed:
+                    jdata['removed'] = removed[:]
+
+                    artifacts = fixture_file.replace('.json', '.artifacts')
+                    if not os.path.isdir(artifacts):
+                        os.makedirs(artifacts)
+
+                    jdata['created'] = {}
+                    for create in created:
+                        if not os.path.isfile(create):
+                            continue
+                        dest = os.path.join(artifacts, os.path.basename(create))
+                        if os.path.isdir(create):
+                            shutil.copytree(create, dest)
+                        else:
+                            shutil.copy(create, dest)
+                        jdata['created'][create] = dest
+
+                    #import epdb; epdb.st()
 
         with open(fixture_file, 'w') as f:
             f.write(json.dumps(jdata, indent=2))
@@ -344,6 +498,32 @@ class AnsibleVCR(object):
                 #if cmd[-1] != fixed_cmd:
                 #    import epdb; epdb.st()
                 jdata['command'][-1] = fixed_cmd[:]
+
+        if jdata.get('removed'):
+            for fn in jdata['removed']:
+                if os.path.exists(fn):
+                    if os.path.isdir(fn):
+                        shutil.rmtree(fn)
+                    else:
+                        os.remove(fn)
+
+        if jdata.get('created'):
+            for k,v in jdata['created'].items():
+                if os.path.exists(k):
+                    if os.path.isdir(k):
+                        shutil.rmtree(k)
+                    else:
+                        os.remove(k)
+
+                dirname = os.path.dirname(k)
+                if not os.path.isdir(dirname):
+                    os.makedirs(dirname)
+
+                if os.path.isfile(v):
+                    shutil.copy(v, k)
+                else:
+                    shutil.copytree(k, v)
+            #import epdb; epdb.st()
 
         display.v('OUT CMD(2): %s' % jdata['command'][-1])
 
