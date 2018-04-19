@@ -138,10 +138,11 @@ class FixtureLogger(object):
     '''CSV like file reader+writer for fixture logging'''
 
     def __init__(self, logdir='/tmp/fixtures'):
+        mode = os.environ.get('ANSIBLE_VCR_MODE', '')
         if not logdir:
             logdir = \
                 os.environ.get('ANSIBLE_VCR_FIXTURE_DIR', '/tmp/fixtures')
-        self.logfile = os.path.join(logdir, 'fixture_read.log')
+        self.logfile = os.path.join(logdir, 'fixture_%s.log' % mode)
 
     def get_last_file(self, taskid, hostdir, function):
         '''What was the last fixture file used?'''
