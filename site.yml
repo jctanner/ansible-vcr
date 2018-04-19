@@ -48,6 +48,35 @@
     - name: install sysstat
       yum:
         name: sysstat
-        state: latest
+        state: present
       become: True
 
+    - name: make files for archive
+      shell: rm -rf /tmp/data-{{ inventory_hostname }}* ; mkdir -p /tmp/data-{{ inventory_hostname }} ; touch /tmp/data-{{ inventory_hostname }}/1
+      delegate_to: localhost
+
+    - shell: rm -rf /tmp/data.extracted
+    - file:
+        path: /tmp/data.extracted
+        state: directory
+
+    - name: create archive of /tmp/data
+      shell: tar czvf /tmp/data-{{ inventory_hostname }}.tar.gz /tmp/data-{{ inventory_hostname }}
+      delegate_to: localhost
+
+    - name: make random dir
+      local_action: command mktemp -d /tmp/openshift-ansible-XXXXXXX
+      register: copy_examples_mktemp
+      run_once: True
+
+    - name: create archive (like openshift)
+      local_action: command tar -C "/tmp/data-{{ inventory_hostname }}/" -cvf "{{ copy_examples_mktemp.stdout }}/openshift-examples.tar" .
+
+    - name: unarchive the gz
+      unarchive:
+          #src: /tmp/data-{{ inventory_hostname }}.tar.gz
+          src: "{{ copy_examples_mktemp.stdout }}/openshift-examples.tar"
+          dest: /tmp/data.extracted
+
+    - name: get rid of the intermediate archive
+      local_action: file dest="{{ copy_examples_mktemp.stdout }}" state=absent
