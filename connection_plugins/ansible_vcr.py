@@ -154,7 +154,8 @@ class FixtureLogger(object):
             data = csv.reader(csvfile, delimiter=';', quotechar='"')
             for row in data:
                 #pprint(row)
-                if int(row[0]) == taskid:
+                #if int(row[0]) == taskid:
+                if row[0] == taskid:
                     if row[1] == hostdir:
                         if row[2] == function:
                             lf = row[3]
@@ -277,6 +278,11 @@ class AnsibleVCR(object):
         task_info = self.callback_reader.get_current_task()
         self.current_task_number = task_info['number']
         self.current_task_info = task_info.copy()
+
+        if hasattr(connection, 'task_uuid'):
+            self.current_task_number = connection.task_uuid.split('-')[-1]
+        else:
+            import epdb; epdb.st()
 
         # set the top level directory for the task fixtures
         taskdir = os.path.join(self.fixture_dir, str(self.current_task_number))

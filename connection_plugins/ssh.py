@@ -320,6 +320,7 @@ class Connection(ConnectionBase):
     transport = 'ssh'
     has_pipelining = True
     become_methods = frozenset(C.BECOME_METHODS).difference(['runas'])
+    task_uuid = None
 
     def __init__(self, *args, **kwargs):
         super(Connection, self).__init__(*args, **kwargs)
@@ -329,6 +330,8 @@ class Connection(ConnectionBase):
         self.user = self._play_context.remote_user
         self.control_path = C.ANSIBLE_SSH_CONTROL_PATH
         self.control_path_dir = C.ANSIBLE_SSH_CONTROL_PATH_DIR
+        if 'task_uuid' in kwargs:
+            self.task_uuid = kwargs['task_uuid']
 
     # The connection is created by running ssh/scp/sftp from the exec_command,
     # put_file, and fetch_file methods, so we don't need to do any connection

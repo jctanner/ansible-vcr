@@ -69,6 +69,13 @@ class Connection(ConnectionBase):
 
     transport = 'local'
     has_pipelining = True
+    task_uuid = None
+
+    def __init__(self, *args, **kwargs):
+        super(Connection, self).__init__(*args, **kwargs)
+
+        if 'task_uuid' in kwargs:
+            self.task_uuid = kwargs['task_uuid']
 
     def _connect(self):
         ''' connect to the local host; nothing to do here '''
