@@ -64,6 +64,11 @@
       shell: tar czvf /tmp/data-{{ inventory_hostname }}.tar.gz /tmp/data-{{ inventory_hostname }}
       delegate_to: localhost
 
+
+    ###################################################################
+    # OPENSHIFT BULK COPY PATTERN
+    ###################################################################
+
     - name: make random dir
       local_action: command mktemp -d /tmp/openshift-ansible-XXXXXXX
       register: copy_examples_mktemp
