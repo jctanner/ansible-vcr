@@ -162,7 +162,8 @@ class Connection(ConnectionBase):
             display.debug("done communicating")
 
             display.debug("done with local.exec_command()")
-            avcr.record_exec_command(self, cmd, p.returncode, stdout, stderr, strace_info=sinfo)
+            if mode == 'record':
+                avcr.record_exec_command(self, cmd, p.returncode, stdout, stderr, strace_info=sinfo)
 
             return (p.returncode, stdout, stderr)
 
@@ -182,7 +183,8 @@ class Connection(ConnectionBase):
         if not mode or mode == 'record':
 
             self._put_file(in_path, out_path)
-            avcr.record_put_file(self, in_path, out_path, 0, '', '')
+            if mode == 'record':
+                avcr.record_put_file(self, in_path, out_path, 0, '', '')
 
         elif mode == 'play':
 
@@ -208,7 +210,8 @@ class Connection(ConnectionBase):
         display.vvv(u"FETCH {0} TO {1}".format(in_path, out_path), host=self._play_context.remote_addr)
         if not mode or mode == 'record':
             self._put_file(in_path, out_path)
-            avcr.record_fetch_file(self, in_path, out_path, 0, '', '')
+            if mode == 'record':
+                avcr.record_fetch_file(self, in_path, out_path, 0, '', '')
         elif mode == 'play':
             (returncode, stdout, stderr) = avcr.read_fetch_file(self, in_path, out_path)
 
