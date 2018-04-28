@@ -279,10 +279,12 @@ class AnsibleVCR(object):
         self.current_task_number = task_info['number']
         self.current_task_info = task_info.copy()
 
+        '''
         if hasattr(connection, 'task_uuid'):
             self.current_task_number = connection.task_uuid.split('-')[-1]
         else:
             import epdb; epdb.st()
+        '''
 
         # set the top level directory for the task fixtures
         taskdir = os.path.join(self.fixture_dir, str(self.current_task_number))
