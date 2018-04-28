@@ -154,8 +154,8 @@ class FixtureLogger(object):
             data = csv.reader(csvfile, delimiter=';', quotechar='"')
             for row in data:
                 #pprint(row)
-                #if int(row[0]) == taskid:
-                if row[0] == taskid:
+                #if row[0] == taskid:
+                if int(row[0]) == taskid:
                     if row[1] == hostdir:
                         if row[2] == function:
                             lf = row[3]
