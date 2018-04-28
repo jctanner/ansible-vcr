@@ -21,8 +21,8 @@ fi
 
 #exit 1
 
-echo "#### WAITING 3 SECONDS ..."
-#sleep 1
+echo "#### WAITING 5 SECONDS ..."
+sleep 5
 rm -rf ansible.log
 rm -rf /tmp/fixtures/callback*
 rm -rf /tmp/fixtures/fixture_read.log
