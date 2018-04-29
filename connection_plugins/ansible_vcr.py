@@ -545,7 +545,6 @@ class AnsibleVCR(object):
 
         return (jdata['returncode'], jdata['stdout'], jdata['stderr'])
 
-
     def record_put_file(self, connection, in_path, out_path, returncode, stdout, stderr):
         self.put_index += 1
 
@@ -579,7 +578,6 @@ class AnsibleVCR(object):
         else:
             shutil.copytree(in_path, content_file)
 
-
     def read_put_file(self, connection, in_path, out_path):
         self.put_index += 1
         display.v('FIXTURE_PUT_INDEX: %s' % self.put_index)
@@ -589,7 +587,6 @@ class AnsibleVCR(object):
             jdata = json.loads(f.read())
 
         return (jdata['returncode'], jdata['stdout'], jdata['stderr'])
-
 
     def record_fetch_file(self, connection, in_path, out_path, returncode, stdout, stderr):
         self.fetch_index += 1
@@ -621,7 +618,6 @@ class AnsibleVCR(object):
         else:
             shutil.copytree(out_path, content_file)
 
-
     def read_fetch_file(self, connection, in_path, out_path):
         self.fetch_index += 1
         fixture_file = self.get_fixture_file('fetch', 'read', connection=connection)
@@ -633,7 +629,7 @@ class AnsibleVCR(object):
         # 2018-04-13_08-33-17-377361_fetch_content_1_foobar
 
         suffix = 'fetch_content_%s_%s' % (self.fetch_index, os.path.basename(out_path))
-        display.v('FETCH SUFFIX: ' % suffix)
+        display.v('FETCH SUFFIX: %s' % suffix)
         candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), suffix))
         display.v('FETCH CANDIDATES: ' % candidates)
         content_file = candidates[-1]
