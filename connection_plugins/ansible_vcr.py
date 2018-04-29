@@ -633,6 +633,15 @@ class AnsibleVCR(object):
         display.v('FETCH GLOB PATTERN: %s/*%s' % (os.path.dirname(fixture_file), suffix))
         candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), suffix))
         display.v('FETCH CANDIDATES: ' % candidates)
+
+        # openshift hackaround
+        if not candidates:
+            nsuffix = 'fetch_content_*_%s' % (os.path.basename(out_path))
+            display.v('FETCH NSUFFIX: %s' % nsuffix)
+            display.v('FETCH NGLOB PATTERN: %s/*%s' % (os.path.dirname(fixture_file), nsuffix))
+            candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), nsuffix))
+            display.v('FETCH NCANDIDATES: ' % candidates)
+
         content_file = candidates[-1]
 
         if not os.path.isdir(content_file):
