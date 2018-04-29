@@ -307,7 +307,14 @@ class AnsibleVCR(object):
             hostdir = os.path.join(taskdir, 'localhost[%s]' % hn)
         '''
         # depends on https://github.com/ansible/ansible/pull/38818
-        hn = connection.get_option('_original_host')
+        if not hasattr(connection, 'host'):
+            hn = connection.get_option('_original_host')
+        else:
+            if connection.host == 'localhost':
+                hn = connection.get_option('_original_host')
+            else:
+                hn = connection.host
+        #import epdb; epdb.st()
         if not hn:
             hostdir = os.path.join(taskdir, connection.host)
         hostdir = os.path.join(taskdir, hn)

@@ -85,3 +85,20 @@
 
     - name: get rid of the intermediate archive
       local_action: file dest="{{ copy_examples_mktemp.stdout }}" state=absent
+
+    ###################################################################
+    # OPENSHIFT BULK COPY PATTERN
+    ###################################################################
+
+    - name: Start and enable iptables service
+      shell: echo "{{ item }}"
+      #systemd:
+      #  name: iptables
+      #  state: started
+      #  enabled: yes
+      #  masked: no
+      #  daemon_reload: yes
+      register: result
+      delegate_to: "{{item}}"
+      run_once: true
+      with_items: "{{ ansible_play_batch }}"
