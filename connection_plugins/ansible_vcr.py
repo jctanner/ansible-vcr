@@ -630,6 +630,7 @@ class AnsibleVCR(object):
 
         suffix = 'fetch_content_%s_%s' % (self.fetch_index, os.path.basename(out_path))
         display.v('FETCH SUFFIX: %s' % suffix)
+        display.v('FETCH GLOB PATTERN: %s/*%s' % (os.path.dirname(fixture_file), suffix))
         candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), suffix))
         display.v('FETCH CANDIDATES: ' % candidates)
         content_file = candidates[-1]
