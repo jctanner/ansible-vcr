@@ -633,7 +633,9 @@ class AnsibleVCR(object):
         # 2018-04-13_08-33-17-377361_fetch_content_1_foobar
 
         suffix = 'fetch_content_%s_%s' % (self.fetch_index, os.path.basename(out_path))
+        display.v('FETCH SUFFIX: ' % suffix)
         candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), suffix))
+        display.v('FETCH CANDIDATES: ' % candidates)
         content_file = candidates[-1]
 
         if not os.path.isdir(content_file):
