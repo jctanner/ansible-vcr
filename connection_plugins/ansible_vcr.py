@@ -10,6 +10,7 @@ __metaclass__ = type
 
 import os
 import datetime
+import difflib
 import glob
 import json
 import re
@@ -638,13 +639,22 @@ class AnsibleVCR(object):
         candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), suffix))
         display.v('FETCH CANDIDATES: ' % candidates)
 
-        # openshift hackaround
+        # openshift hackaround 1 - drop the index and look for a similar file
         if not candidates:
             nsuffix = 'fetch_content_*_%s' % (os.path.basename(out_path))
             display.v('FETCH NSUFFIX: %s' % nsuffix)
             display.v('FETCH NGLOB PATTERN: %s/*%s' % (os.path.dirname(fixture_file), nsuffix))
             candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), nsuffix))
             display.v('FETCH NCANDIDATES: ' % candidates)
+
+        # openshift hackaround 1 - find a file very similar by 1,2 chars
+        if not candidates:
+            nsuffix2 = 'fetch_content_*_*'
+            display.v('FETCH NSUFFIX2: %s' % nsuffix2)
+            display.v('FETCH NGLOB PATTERN: %s/*%s' % (os.path.dirname(fixture_file), nsuffix2))
+            _candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), nsuffix2))
+            _candidates = [os.path.basename(x) for x in _candidates]
+            candidates = difflib.get_close_matches(nsuffix, _candidates)
 
         content_file = candidates[-1]
 
