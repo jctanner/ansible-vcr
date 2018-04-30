@@ -655,6 +655,7 @@ class AnsibleVCR(object):
             _candidates = glob.glob('%s/*%s' % (os.path.dirname(fixture_file), nsuffix2))
             _candidates = [os.path.basename(x) for x in _candidates]
             candidates = difflib.get_close_matches(nsuffix, _candidates)
+            candidates = [os.path.join(os.path.dirname(fixture_file), x) for x in candidates]
 
         content_file = candidates[-1]
 
