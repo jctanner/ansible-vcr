@@ -404,6 +404,10 @@ class AnsibleVCR(object):
             _existing = glob.glob('%s/*%s' % (hostdir, suffix))
             display.v('READ _EXISTING: %s' % _existing)
 
+            # openshift hackaround - just send the last one again ... ?
+            if not _existing:
+                _existing = [lastf]
+
             if len(_existing) == 1:
                 filen = _existing[-1]
             else:
