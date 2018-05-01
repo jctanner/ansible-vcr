@@ -361,7 +361,7 @@ class AnsibleVCR(object):
             existing = glob.glob('%s/*.json' % hostdir)
             existing = [x for x in existing if function in x]
             existing = [x for x in existing if x.endswith('.json')]
-            display.vvvv('[%s] 1. possible choices: ' % (hn, existing))
+            display.vvvv('[%s] 1. possible choices: %s' % (hn, existing))
 
             if cmd:
                 existing = sorted(existing)
