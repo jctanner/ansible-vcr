@@ -354,14 +354,14 @@ class AnsibleVCR(object):
                 filen = _prefix + '%s.json' % (existing[-1] + 1)
 
         elif op == 'read':
-            display.vvvv('READ TASKID: %s' % self.current_task_number)
-            display.vvvv('READ FUNCTION: %s' % function)
-            display.vvvv('READ OP: %s' % op)
+            display.vvvv('[%s] READ TASKID: %s' % (hn, self.current_task_number))
+            display.vvvv('[%s] READ FUNCTION: %s' % (hn, function))
+            display.vvvv('[%s] READ OP: %s' % (hn, op))
 
             existing = glob.glob('%s/*.json' % hostdir)
             existing = [x for x in existing if function in x]
             existing = [x for x in existing if x.endswith('.json')]
-            display.vvvv('1. possible choices: ' % existing)
+            display.vvvv('[%s] 1. possible choices: ' % (hn, existing))
 
             if cmd:
                 existing = sorted(existing)
@@ -380,16 +380,16 @@ class AnsibleVCR(object):
 
                 if candidates:
                     existing = candidates[:]
-                display.vvvv('2. possible choices: ' % existing)
+                display.vvvv('[%s] 2. possible choices: ' % (hn, existing))
 
             existing = [x.replace('.json', '') for x in existing]
             existing = [x.split('_')[-1] for x in existing]
             existing = sorted([int(x) for x in existing], reverse=True)
-            display.vvvv('3. possible choices: ' % existing)
+            display.vvvv('[%s] 3. possible choices: ' % (hn, existing))
 
             # use the last file to increment for this call
             lastf = self.fixture_logger.get_last_file(self.current_task_number, hostdir, function)
-            display.v('READ LASTFILE: %s' % lastf)
+            display.v('[%s] READ LASTFILE: %s' % (hn, lastf))
 
             # increment the id of the file
             if lastf is None:
@@ -398,12 +398,12 @@ class AnsibleVCR(object):
                 fileid = lastf.split('_')[-1].replace('.json', '')
                 fileid = int(fileid)
                 fileid += 1
-            display.vvvv('READ FID: ' + str(fileid))
+            display.vvvv('[' + hn + '] READ FID: ' + str(fileid))
 
             # try to find the file with the new id
             suffix = '_%s_%s.json' % (function, fileid)
             _existing = glob.glob('%s/*%s' % (hostdir, suffix))
-            display.v('READ _EXISTING: %s' % _existing)
+            display.v('[%s] READ _EXISTING: %s' % (hn, _existing))
 
             # openshift hackaround - just send the last one again ... ?
             if not _existing:
@@ -412,7 +412,7 @@ class AnsibleVCR(object):
             if len(_existing) == 1:
                 filen = _existing[-1]
             else:
-                display.error('_existing: %s' % _existing)
+                display.error('[%s] _existing: %s' % (hn, _existing))
                 breakhost = os.environ.get('ANSIBLE_VCR_HOST_BREAK')
                 if not breakhost or breakhost == hn:
                     import epdb; epdb.st()
@@ -420,7 +420,7 @@ class AnsibleVCR(object):
 
             self.fixture_logger.set_last_file(self.current_task_number, hostdir, function, filen)
 
-        display.vvvv('RETURN FILE: ' + str(filen))
+        display.vvvv('[' + hn + '] RETURN FILE: ' + str(filen))
         return filen
 
     def record_exec_command(self, connection, command, returncode, stdout, stderr, strace_info=None):
@@ -656,6 +656,7 @@ class AnsibleVCR(object):
             _candidates = [os.path.basename(x) for x in _candidates]
             candidates = difflib.get_close_matches(nsuffix, _candidates)
             candidates = [os.path.join(os.path.dirname(fixture_file), x) for x in candidates]
+            display.v('FETCH NCANDIDATES2: ' % candidates)
 
         content_file = candidates[-1]
 
