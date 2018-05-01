@@ -380,12 +380,12 @@ class AnsibleVCR(object):
 
                 if candidates:
                     existing = candidates[:]
-                display.vvvv('[%s] 2. possible choices: ' % (hn, existing))
+                display.vvvv('[%s] 2. possible choices: %s' % (hn, existing))
 
             existing = [x.replace('.json', '') for x in existing]
             existing = [x.split('_')[-1] for x in existing]
             existing = sorted([int(x) for x in existing], reverse=True)
-            display.vvvv('[%s] 3. possible choices: ' % (hn, existing))
+            display.vvvv('[%s] 3. possible choices: %s' % (hn, existing))
 
             # use the last file to increment for this call
             lastf = self.fixture_logger.get_last_file(self.current_task_number, hostdir, function)
